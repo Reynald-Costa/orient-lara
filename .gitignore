@@ -1,7 +1,8 @@
-# Vercel — credenciais e configs locais do projeto (NUNCA versionar)
+# Vercel - credenciais e configs locais (NUNCA versionar)
 .vercel
+.env*
 
-# Dependências (não usamos, mas por segurança)
+# Dependencias (nao usamos, mas por seguranca)
 node_modules
 
 # Sistema operacional
