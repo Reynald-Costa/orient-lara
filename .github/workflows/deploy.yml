@@ -1,0 +1,79 @@
+# ============================================================
+#  Deploy do site na Vercel via GitHub Actions
+#  - push na branch main  -> deploy de PRODUÇÃO
+#  - pull request p/ main  -> deploy de PREVIEW (URL de teste)
+# ============================================================
+
+name: Deploy (Vercel)
+
+# ---- QUANDO este workflow roda ----
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# ---- Permissões do token automático do Actions ----
+# Precisamos de "write" em pull requests para comentar a URL de preview.
+permissions:
+  contents: read
+  pull-requests: write
+
+# ---- Variáveis disponíveis em todos os steps ----
+# A CLI da Vercel precisa saber QUAL projeto/conta usar.
+# Esses IDs não são segredo de verdade, mas guardamos como "secrets" por praticidade.
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) Baixa o código do repositório para dentro da máquina do Actions
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      # 2) Instala o Node (a CLI da Vercel é um pacote npm)
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # 3) Instala a CLI da Vercel globalmente nessa máquina temporária
+      - name: Instalar Vercel CLI
+        run: npm install --global vercel@latest
+
+      # 4) PULL — baixa as configurações do projeto que estão na Vercel
+      #    (framework, variáveis de ambiente, etc.) e grava em .vercel/
+      #    O ambiente muda conforme o gatilho: produção no main, preview nos PRs.
+      - name: Baixar configurações da Vercel
+        run: vercel pull --yes --token=${{ secrets.VERCEL_TOKEN }} --environment=${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+
+      # 5) BUILD — a Vercel "compila" o site aqui dentro do Actions
+      #    (para site estático, basicamente organiza os arquivos em .vercel/output)
+      - name: Build
+        run: vercel build ${{ github.ref == 'refs/heads/main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+
+      # 6) DEPLOY — envia o resultado já pronto (--prebuilt) para a Vercel
+      #    e guarda a URL retornada numa variável de saída do step.
+      - name: Deploy
+        id: deploy
+        run: |
+          URL=$(vercel deploy --prebuilt ${{ github.ref == 'refs/heads/main' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "🚀 Publicado em: $URL" >> "$GITHUB_STEP_SUMMARY"
+
+      # 7) (só em Pull Request) comenta a URL de preview no PR
+      - name: Comentar URL de preview no PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `🔍 Preview deste PR: ${{ steps.deploy.outputs.url }}`
+            })

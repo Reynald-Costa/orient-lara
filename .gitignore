@@ -1,0 +1,9 @@
+# Vercel — credenciais e configs locais do projeto (NUNCA versionar)
+.vercel
+
+# Dependências (não usamos, mas por segurança)
+node_modules
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
