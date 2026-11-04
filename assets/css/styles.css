@@ -391,14 +391,15 @@ h1, h2, h3 { font-family: var(--font-head); line-height: 1.15; font-weight: 600;
     flex-direction: column; align-items: stretch; gap: 0;
     background: #101010;
     padding: calc(var(--header-h) + 12px) 22px 32px;
-    transform: translateY(-110%); visibility: hidden;
-    transition: transform .35s ease, visibility .35s;
+    /* abre rápido: só um leve deslize + fade, em vez de descer a tela inteira */
+    opacity: 0; transform: translateY(-8px); visibility: hidden;
+    transition: opacity .18s ease-out, transform .18s ease-out, visibility 0s linear .18s;
     overflow-y: auto;
   }
-  .main-nav.open { transform: translateY(0); visibility: visible; box-shadow: 0 20px 40px -20px rgba(0, 0, 0, .6); }
+  .main-nav.open { opacity: 1; transform: none; visibility: visible; transition-delay: 0s; }
   body.nav-open { overflow: hidden; }
   /* backdrop-filter cria um "containing block" e prende o menu fixo dentro do header */
-  body.nav-open .site-header { background: #101010; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
+  body.nav-open .site-header { background: #101010; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; transition: none; }
   body.nav-open .brand-name { color: #fff; }
   body.nav-open .brand-tag { color: rgba(255, 255, 255, .7); }
   body.nav-open .nav-toggle span { background: #fff; }
